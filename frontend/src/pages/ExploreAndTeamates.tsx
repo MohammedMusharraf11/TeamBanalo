@@ -3,15 +3,14 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const ExploreAndTeammates: React.FC = () => {
   const { user } = useAuth();
-
   const [hackathons, setHackathons] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // For recommendations
   const [showRecs, setShowRecs] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
@@ -25,6 +24,7 @@ const ExploreAndTeammates: React.FC = () => {
         .select("*")
         .order("created_at", { ascending: false });
       setHackathons(hackathonsData || []);
+
       const { data: projectsData } = await supabase
         .from("projects")
         .select("*")
@@ -35,7 +35,6 @@ const ExploreAndTeammates: React.FC = () => {
     fetchData();
   }, []);
 
-  // Find Team Mates handler
   const handleFindTeammates = async (hackathon: any) => {
     setLoadingRecs(true);
     setShowRecs(true);
@@ -50,19 +49,17 @@ const ExploreAndTeammates: React.FC = () => {
       const data = await response.json();
       setRecommendations(data.recommendations || []);
     } catch (error) {
-      // Optionally handle error
+      // optionally handle error
     } finally {
       setLoadingRecs(false);
     }
   };
 
-  // Separate user's and others' hackathons
   const myHackathons = user ? hackathons.filter(h => h.user_id === user.id) : [];
   const exploreHackathons = user ? hackathons.filter(h => h.user_id !== user.id) : hackathons;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 pt-20">
-      {/* Header */}
       <h1 className="text-3xl font-bold mb-2">Explore What's New</h1>
       <p className="mb-8 text-gray-300">
         Find hackathons and projects to join, or just see what others are working on.
@@ -79,37 +76,24 @@ const ExploreAndTeammates: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
               {myHackathons.map((h) => (
-                <div
-                  key={h.id}
-                  className={`
-                    bg-dark-300/40 backdrop-blur-sm border border-gray-700/50 
-                    p-6 sm:p-8 rounded-2xl transition-all duration-300 
-                    hover:bg-dark-300/60 hover:border-gray-600/50 
-                    hover:shadow-2xl hover:scale-105 
-                    focus-within:ring-2 focus-within:ring-electric-blue/50 
-                    focus-within:ring-offset-2 focus-within:ring-offset-dark-200
-                    cursor-pointer flex flex-col
-                  `}
-                >
+                <div key={h.id} className="bg-dark-300/40 p-6 rounded-2xl hover:scale-105 transition-all flex flex-col">
                   <div className="mb-6">
                     <h3 className="text-xl font-bold text-gray-100 mb-1">{h.hackathon_name}</h3>
                     <div className="text-gray-400 text-sm">{h.location} • {h.date}</div>
                   </div>
-                  <p className="text-gray-400 mb-4 leading-relaxed">
-                    {h.project_description}
-                  </p>
+                  <p className="text-gray-400 mb-4">{h.project_description}</p>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {h.skills_needed?.map((skill: string) => (
                       <span key={skill} className="bg-blue-900 text-blue-200 px-2 py-0.5 rounded text-xs">{skill}</span>
                     ))}
                   </div>
                   <div className="flex items-center gap-2 mt-auto">
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleFindTeammates(h)}
-                    >
+                    <Button variant="secondary" onClick={() => handleFindTeammates(h)}>
                       Find Team Mates
                     </Button>
+                    <Link to={`/hackathon/${h.id}`} className="text-electric-blue font-semibold hover:underline">
+                      View Details
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -127,41 +111,24 @@ const ExploreAndTeammates: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
           {exploreHackathons.map((h) => (
-            <div
-              key={h.id}
-              className={`
-                bg-dark-300/40 backdrop-blur-sm border border-gray-700/50 
-                p-6 sm:p-8 rounded-2xl transition-all duration-300 
-                hover:bg-dark-300/60 hover:border-gray-600/50 
-                hover:shadow-2xl hover:scale-105 
-                focus-within:ring-2 focus-within:ring-electric-blue/50 
-                focus-within:ring-offset-2 focus-within:ring-offset-dark-200
-                cursor-pointer flex flex-col
-              `}
-            >
+            <div key={h.id} className="bg-dark-300/40 p-6 rounded-2xl hover:scale-105 transition-all flex flex-col">
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-gray-100 mb-1">{h.hackathon_name}</h3>
                 <div className="text-gray-400 text-sm">{h.location} • {h.date}</div>
               </div>
-              <p className="text-gray-400 mb-4 leading-relaxed">
-                {h.project_description}
-              </p>
+              <p className="text-gray-400 mb-4">{h.project_description}</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {h.skills_needed?.map((skill: string) => (
                   <span key={skill} className="bg-blue-900 text-blue-200 px-2 py-0.5 rounded text-xs">{skill}</span>
                 ))}
               </div>
-              <div className="flex items-center text-electric-blue font-semibold cursor-pointer">
-                View Details
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
-              </div>
-              <div className="flex items-center gap-2 mt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => handleFindTeammates(h)}
-                >
+              <div className="flex items-center gap-2 mt-auto">
+                <Button variant="secondary" onClick={() => handleFindTeammates(h)}>
                   Find Team Mates
                 </Button>
+                <Link to={`/hackathon/${h.id}`} className="text-electric-blue font-semibold hover:underline">
+                  View Details
+                </Link>
               </div>
             </div>
           ))}
@@ -177,33 +144,24 @@ const ExploreAndTeammates: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {projects.map((p) => (
-            <div
-              key={p.id}
-              className={`
-                bg-dark-300/40 backdrop-blur-sm border border-gray-700/50 
-                p-6 sm:p-8 rounded-2xl transition-all duration-300 
-                hover:bg-dark-300/60 hover:border-gray-600/50 
-                hover:shadow-2xl hover:scale-105 
-                focus-within:ring-2 focus-within:ring-electric-blue/50 
-                focus-within:ring-offset-2 focus-within:ring-offset-dark-200
-                cursor-pointer flex flex-col
-              `}
-            >
+            <div key={p.id} className="bg-dark-300/40 p-6 rounded-2xl hover:scale-105 transition-all flex flex-col">
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-gray-100 mb-1">{p.project_name}</h3>
                 <div className="text-gray-400 text-sm">{new Date(p.created_at).toLocaleDateString()}</div>
               </div>
-              <p className="text-gray-400 mb-4 leading-relaxed">
-                {p.project_description}
-              </p>
+              <p className="text-gray-400 mb-4">{p.project_description}</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {p.required_skills?.map((skill: string) => (
                   <span key={skill} className="bg-blue-900 text-blue-200 px-2 py-0.5 rounded text-xs">{skill}</span>
                 ))}
               </div>
-              <div className="flex items-center text-electric-blue font-semibold cursor-pointer">
-                View Details
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+              <div className="flex items-center gap-2 mt-auto">
+                <Link to={`/project/${p.id}`} className="text-electric-blue font-semibold hover:underline">
+                  View Details
+                </Link>
+                <Button variant="secondary" onClick={() => alert("Find Teams feature coming soon!")}>
+                  Find Teams
+                </Button>
               </div>
             </div>
           ))}
@@ -211,77 +169,66 @@ const ExploreAndTeammates: React.FC = () => {
       )}
 
       {/* Recommendations Modal */}
-     {showRecs && (
-  <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-    <div className="bg-dark-200 rounded-2xl p-8 max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
-      <button
-        className="absolute top-4 right-4 text-gray-400 hover:text-white"
-        onClick={() => setShowRecs(false)}
-      >
-        <X className="w-5 h-5" />
-      </button>
-      <h2 className="text-xl font-bold text-white mb-4">
-        Recommended Teammates
-        {recHackathon && (
-          <span className="text-base text-gray-400 ml-2">
-            for <span className="font-semibold">{recHackathon.hackathon_name}</span>
-          </span>
-        )}
-      </h2>
-      
-      {loadingRecs ? (
-        <div className="grid place-items-center h-48">
-          <div className="text-gray-400">Loading recommendations...</div>
-        </div>
-      ) : recommendations.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendations.map((rec) => (
-            <div 
-              key={rec.user_id}
-              className="bg-dark-300/40 backdrop-blur-sm border border-gray-700/50 p-6 rounded-2xl shadow-lg flex flex-col gap-3"
+      {showRecs && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+          <div className="bg-dark-200 rounded-2xl p-8 max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              onClick={() => setShowRecs(false)}
             >
-              <div className="flex items-center gap-4 mb-2">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-electric-blue to-electric-teal flex items-center justify-center text-white font-bold">
-                    {rec.email.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {rec.score}%
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{rec.email}</h3>
-                  <div className="text-xs text-gray-400">Match Score: {rec.score}%</div>
-                </div>
-              </div>
-              
-              <div className="text-gray-300 text-sm mb-2">
-                {rec.explanation}
-              </div>
-              
-              <div className="mt-auto pt-2 border-t border-gray-700/50">
-                <a
-                  href={`mailto:${rec.email}`}
-                  className="w-full inline-flex items-center justify-center border border-electric-blue text-electric-blue rounded-lg py-2 px-4 hover:bg-electric-blue/10 transition"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Contact
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-gray-400 text-center py-8">No recommendations found</div>
-      )}
-    </div>
-  </div>
-)}
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-4">
+              Recommended Teammates
+              {recHackathon && (
+                <span className="text-base text-gray-400 ml-2">
+                  for <span className="font-semibold">{recHackathon.hackathon_name}</span>
+                </span>
+              )}
+            </h2>
 
+            {loadingRecs ? (
+              <div className="grid place-items-center h-48">
+                <div className="text-gray-400">Loading recommendations...</div>
+              </div>
+            ) : recommendations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommendations.map((rec) => (
+                  <div key={rec.user_id} className="bg-dark-300/40 p-6 rounded-2xl shadow-lg flex flex-col gap-3">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-electric-blue to-electric-teal flex items-center justify-center text-white font-bold">
+                          {rec.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {rec.score}%
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{rec.email}</h3>
+                        <div className="text-xs text-gray-400">Match Score: {rec.score}%</div>
+                      </div>
+                    </div>
+                    <div className="text-gray-300 text-sm mb-2">{rec.explanation}</div>
+                    <div className="mt-auto pt-2 border-t border-gray-700/50">
+                      <a
+                        href={`mailto:${rec.email}`}
+                        className="w-full inline-flex items-center justify-center border border-electric-blue text-electric-blue rounded-lg py-2 px-4 hover:bg-electric-blue/10 transition"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Contact
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-400 text-center py-8">No recommendations found</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
