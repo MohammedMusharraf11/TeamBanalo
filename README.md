@@ -2,9 +2,9 @@
 
 **Empowering Teams, Accelerating Innovation Together**
 
-[![Last Commit](https://img.shields.io/github/last-commit/Mohammedbilal12365/TeamBanalo?style=for-the-badge)](https://github.com/Mohammedbilal12365/TeamBanalo)
+[![Last Commit](https://img.shields.io/github/last-commit/MohammedMusharraf11/TeamBanalo?style=for-the-badge)](https://github.com/MohammedMusharraf11/TeamBanalo)
 [![TypeScript](https://img.shields.io/badge/typescript-92.5%25-blue?style=for-the-badge)]()
-[![Languages](https://img.shields.io/github/languages/count/Mohammedbilal12365/TeamBanalo?style=for-the-badge)]()
+[![Languages](https://img.shields.io/github/languages/count/MohammedMusharraf11/TeamBanalo?style=for-the-badge)](https://github.com/MohammedMusharraf11/TeamBanalo)
 [![Live Site](https://img.shields.io/badge/Live-Demo-2ea44f?style=for-the-badge&logo=vercel)](https://teambanalo-frontend.onrender.com)
 
 ---
