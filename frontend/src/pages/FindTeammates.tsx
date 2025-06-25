@@ -1,307 +1,186 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, X,User } from 'lucide-react';
+import { User, Mail, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-
 const FindTeammates: React.FC = () => {
   const { user } = useAuth();
-
-  // For teammate search and modal
+  const navigate = useNavigate();
+  
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPostForm, setShowPostForm] = useState(false);
   const [search, setSearch] = useState('');
 
-  // For hackathon posting form
-  const [searchFilters, setSearchFilters] = useState({
-    hackathonName: '',
-    date: '',
-    location: '',
-    projectDescription: '',
-    skillsNeeded: '',
-    teamSize: '4'
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // For recommendations
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [postedHackathon, setPostedHackathon] = useState<any>(null);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loadingRecs, setLoadingRecs] = useState(false);
-  const [showRecs, setShowRecs] = useState(false);
-
-  // Fetch all users and their hackathon postings
+  // Fetch all user profiles from the database
   useEffect(() => {
     const fetchProfiles = async () => {
       setLoading(true);
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, full_name, email, avatar_url, bio, skills')
-        .neq('id', user.id); // Exclude current user
+        .neq('id', user?.id); // Exclude current user if logged in
+      
       setProfiles(profilesData || []);
       setLoading(false);
     };
-    if (user) fetchProfiles();
+    
+    fetchProfiles();
   }, [user]);
 
-  // For teammate search
+  // Filter profiles based on search query
   const filteredProfiles = profiles.filter(profile =>
     (profile.full_name?.toLowerCase() || '').includes(search.toLowerCase()) ||
     (profile.skills?.join(',').toLowerCase() || '').includes(search.toLowerCase()) ||
-    (profile.bio?.toLowerCase() || '').includes(search.toLowerCase())
+    (profile.bio?.toLowerCase() || '').includes(search.toLowerCase()) ||
+    (profile.email?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
-  // Posting form handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setSearchFilters(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  // Handle reaching out via email
+  const handleReachOut = (email: string, name: string) => {
+    const subject = encodeURIComponent(`Collaboration Opportunity - Let's team up!`);
+    const body = encodeURIComponent(`Hi ${name},\n\nI found your profile and would love to discuss potential collaboration opportunities. Let's connect!\n\nBest regards`);
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`);
   };
 
-  // Submit new hackathon
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setSubmitSuccess(false);
-    setSubmitError(null);
-    if (!user) {
-      setSubmitError("You must be logged in to submit a hackathon project.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    const insertData = {
-      user_id: user.id,
-      hackathon_name: searchFilters.hackathonName,
-      date: searchFilters.date || null,
-      location: searchFilters.location,
-      team_size: Number(searchFilters.teamSize) || null,
-      project_description: searchFilters.projectDescription,
-      skills_needed: searchFilters.skillsNeeded
-        ? searchFilters.skillsNeeded.split(',').map(s => s.trim()).filter(Boolean)
-        : [],
-    };
-
-    const { error } = await supabase.from('hackathons').insert([insertData]);
-    if (error) {
-      setSubmitError("Failed to submit hackathon: " + error.message);
-      setIsSubmitting(false);
-      return;
-    }
-
-    setSubmitSuccess(true);
-    setIsSubmitting(false);
-    setShowPostForm(false);
-
-    // Fetch the latest hackathon just posted by this user
-    const { data: latestHackathon } = await supabase
-      .from('hackathons')
-      .select('id, user_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    setPostedHackathon(latestHackathon);
-    setShowConfirmation(true);
-  };
-
-  // Recommendation API call
-  const handleFindTeammates = async (hackathonId: string, posterId: string) => {
-    setLoadingRecs(true);
-    setShowRecs(true);
-    setRecommendations([]);
-    try {
-      const response = await fetch("http://127.0.0.1:8000/recommend-team-mates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hackathon_id: hackathonId, poster_id: posterId }),
-      });
-      const data = await response.json();
-      setRecommendations(data.recommendations || []);
-    } catch (error) {
-      // Optionally handle error
-    } finally {
-      setLoadingRecs(false);
-    }
+  // Handle view profile navigation
+  const handleViewProfile = (profile: any) => {
+    navigate(`/view-profile/${profile.id}`);
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto pt-20">
       {/* Header */}
-      <h1 className="text-3xl font-bold mb-2">Find Teammates</h1>
-      <p className="mb-6 text-gray-300">Browse users, see their skills and hackathon posts, and reach out to collaborate!</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-white">Find Teammates</h1>
+        <p className="text-gray-300">
+          Discover talented individuals, explore their skills, and connect for your next project or hackathon.
+        </p>
+      </div>
 
       {/* Search Bar */}
-      <Input
-        type="text"
-        placeholder="Search teammates by name, skill, or bio"
-        className="mb-6"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
+      <div className="mb-8">
+        <Input
+          type="text"
+          placeholder="Search by name, skills, bio, or email..."
+          className="max-w-md"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-      {/* All Users */}
+      {/* Loading State */}
       {loading ? (
-        <div>Loading teammates...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-400">Loading teammates...</div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredProfiles.map(profile => (
-            <div key={profile.id} className="bg-dark-200 rounded-lg p-4 shadow">
-              <div className="flex items-center mb-2">
-                <User className="w-5 h-5 mr-2" />
-                <span className="font-semibold">{profile.full_name}</span>
-              </div>
-              <div className="text-sm text-gray-400 mb-2">{profile.email}</div>
-              <div className="text-gray-300 mb-2">{profile.bio}</div>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {profile.skills?.map((skill: string) => (
-                  <span key={skill} className="bg-electric-blue text-white rounded-full px-2 py-1 text-xs">{skill}</span>
-                ))}
-              </div>
-              <Button size="sm" variant="secondary">
-                Reach Out
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Floating button to post new hackathon */}
-      <button
-        className="fixed bottom-8 right-8 z-50 bg-electric-blue hover:bg-electric-teal text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200"
-        onClick={() => setShowPostForm(true)}
-        title="Post New Hackathon"
-      >
-        <Plus className="w-7 h-7" />
-      </button>
-
-      {/* Modal for posting new hackathon */}
-      {showPostForm && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-dark-200 rounded-2xl p-8 max-w-lg w-full relative">
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              onClick={() => setShowPostForm(false)}
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-2xl font-bold text-white mb-6">Post a Hackathon</h2>
-            <div className="space-y-4">
-              <Input
-                name="hackathonName"
-                value={searchFilters.hackathonName}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Hackathon Name"
-              />
-              <Input
-                name="date"
-                type="date"
-                value={searchFilters.date}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Date"
-              />
-              <Input
-                name="location"
-                value={searchFilters.location}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Location"
-              />
-              <Input
-                name="teamSize"
-                value={searchFilters.teamSize}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Team Size"
-              />
-              <Textarea
-                name="projectDescription"
-                value={searchFilters.projectDescription}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Project Description"
-              />
-              <Textarea
-                name="skillsNeeded"
-                value={searchFilters.skillsNeeded}
-                onChange={handleInputChange}
-                className="input-dark"
-                placeholder="Skills Needed (comma separated)"
-              />
-              <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Posting..." : "Post Hackathon"}
-              </Button>
-              {submitSuccess && (
-                <div className="text-green-400 mt-2">Hackathon posted!</div>
-              )}
-              {submitError && (
-                <div className="text-red-400 mt-2">{submitError}</div>
-              )}
-            </div>
+        <>
+          {/* Results Count */}
+          <div className="mb-6 text-gray-400">
+            {filteredProfiles.length} teammate{filteredProfiles.length !== 1 ? 's' : ''} found
           </div>
-        </div>
-      )}
 
-      {/* Confirmation Modal with Find Team Mates Button */}
-      {showConfirmation && postedHackathon && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-dark-200 rounded-2xl p-8 max-w-lg w-full relative">
-            <h2 className="text-2xl font-bold text-white mb-6">Hackathon Posted!</h2>
-            <p className="mb-4 text-white">Your hackathon has been posted successfully.</p>
-            <Button
-              onClick={() => handleFindTeammates(postedHackathon.id, postedHackathon.user_id)}
-              className="w-full"
-            >
-              Find Team Mates
-            </Button>
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              onClick={() => setShowConfirmation(false)}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Recommendations Modal */}
-      {showRecs && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="bg-dark-200 rounded-2xl p-8 max-w-lg w-full relative">
-            <h2 className="text-xl font-bold text-white mb-4">Recommended Teammates</h2>
-            {loadingRecs ? (
-              <div>Loading...</div>
-            ) : recommendations.length > 0 ? (
-              recommendations.map((rec) => (
-                <div key={rec.user_id} className="mb-4 border-b border-gray-700 pb-2">
-                  <div className="font-semibold text-white">
-                    {rec.email} <span className="text-blue-400">(Score: {rec.score}%)</span>
+          {/* Profile Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="bg-dark-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-700 hover:border-electric-blue/50"
+              >
+                {/* Profile Header */}
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-electric-blue/20 rounded-full flex items-center justify-center mr-3">
+                    {profile.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.full_name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-electric-blue" />
+                    )}
                   </div>
-                  <div className="text-gray-300 text-sm">{rec.explanation}</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white text-lg truncate">
+                      {profile.full_name || 'Anonymous User'}
+                    </h3>
+                    <div className="flex items-center text-gray-400 text-sm">
+                      <Mail className="w-4 h-4 mr-1" />
+                      <span className="truncate">{profile.email}</span>
+                    </div>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-gray-400">No recommendations found.</div>
-            )}
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              onClick={() => setShowRecs(false)}
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+                {/* Bio */}
+                {profile.bio && (
+                  <div className="mb-4">
+                    <p className="text-gray-300 text-sm line-clamp-3">
+                      {profile.bio}
+                    </p>
+                  </div>
+                )}
+
+                {/* Skills */}
+                {profile.skills && profile.skills.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {profile.skills.slice(0, 4).map((skill: string, index: number) => (
+                        <span
+                          key={index}
+                          className="bg-electric-blue/20 text-electric-blue rounded-full px-3 py-1 text-xs font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {profile.skills.length > 4 && (
+                        <span className="bg-gray-700 text-gray-300 rounded-full px-3 py-1 text-xs">
+                          +{profile.skills.length - 4} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleViewProfile(profile)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View Profile
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-electric-blue hover:bg-electric-teal"
+                    onClick={() => handleReachOut(profile.email, profile.full_name)}
+                  >
+                    <Mail className="w-4 h-4 mr-1" />
+                    Reach Out
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Empty State */}
+          {filteredProfiles.length === 0 && (
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">No teammates found</h3>
+              <p className="text-gray-500">
+                {search
+                  ? 'Try adjusting your search criteria'
+                  : 'No profiles available at the moment'}
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

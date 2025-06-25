@@ -26,6 +26,7 @@ import ExploreAndTeammates from "@/pages/ExploreAndTeamates";
 import HackathonDetails from "@/pages/HackthonDetails";
 import ProjectDetails from "@/pages/ProjectDetails";
 import ViewProfile from "@/pages/viewprofile";
+import FindTeammates from "@/pages/FindTeammates";
 
 import NotFound from "@/pages/NotFound";
 
@@ -76,7 +77,7 @@ const AppContent = () => {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-          {/* <Route path="/find-teammates" element={<ProtectedRoute><FindTeammates /></ProtectedRoute>} /> */}
+          <Route path="/find-teammates" element={<ProtectedRoute><FindTeammates /></ProtectedRoute>} />
           <Route path="/explore-and-teammates" element={<ProtectedRoute><ExploreAndTeammates /></ProtectedRoute>} />
           <Route path="/post-hackathon" element={<ProtectedRoute><PostHackathon /></ProtectedRoute>} />
           <Route path="/post-project" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
